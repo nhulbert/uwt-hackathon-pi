@@ -25,7 +25,7 @@ public class SimulatedDevice {
   // Using the Azure CLI:
   // az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyJavaDevice --output table
   private static String connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice;SharedAccessKey=MYC7pLyU8R01VQuJ3SrO8Gw3mKOVbvnS7ThUu8AV7Hw=";
-
+  private static final String location = "7,3";
   
   // Using the MQTT protocol to connect to IoT Hub
   private static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
@@ -45,6 +45,7 @@ public class SimulatedDevice {
   private static class TelemetryDataPoint {
     public double temperature;
     public double humidity;
+    public String location;
     
     // Serialize object to JSON format.
     public String serialize() {
@@ -100,14 +101,11 @@ public class SimulatedDevice {
             TelemetryDataPoint telemetryDataPoint = new TelemetryDataPoint();
             telemetryDataPoint.temperature = currentTemperature;
             telemetryDataPoint.humidity = currentHumidity;
-
+            telemetryDataPoint.location = location;
+            
             // Add the telemetry to the message body as JSON.
             String msgStr = telemetryDataPoint.serialize();
             Message msg = new Message(msgStr);
-
-            // Add a custom application property to the message.
-            // An IoT hub can filter on these properties without access to the message body.
-            msg.setProperty("temperatureAlert", (currentTemperature > 30) ? "true" : "false");
 
             System.out.println("Sending message: " + msgStr);
 
