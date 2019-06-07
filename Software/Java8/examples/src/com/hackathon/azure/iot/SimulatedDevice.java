@@ -78,41 +78,54 @@ public class SimulatedDevice {
 
         while (true) {
           // Simulate telemetry.
-          double currentTemperature = -1;
-          double currentHumidity = -1;
+          Double currentTemperature = -1.0;
+          Double currentHumidity = -1.0;
           try {
-            //TODO: handle (ignore) NaN values
-              
-            currentTemperature = dht.get().getTemperature();
-            currentHumidity = dht.get().getHumidity();
+            Double newTemp = dht.get().getTemperature();
+            Double newHumidity = dht.get().getHumidity();
+            
+            if (!newTemp.isNaN()) {
+                currentTemperature = newTemp;
+            }
+            
+            if (newHumidity.isNaN()) {
+                currentHumidity = newHumidity;
+            }
             
           } catch (IOException e){
               System.out.println("Error measuring temp/humid");
           }
-          TelemetryDataPoint telemetryDataPoint = new TelemetryDataPoint();
-          telemetryDataPoint.temperature = currentTemperature;
-          telemetryDataPoint.humidity = currentHumidity;
+          
+          try {
+            TelemetryDataPoint telemetryDataPoint = new TelemetryDataPoint();
+            telemetryDataPoint.temperature = currentTemperature;
+            telemetryDataPoint.humidity = currentHumidity;
 
-          // Add the telemetry to the message body as JSON.
-          String msgStr = telemetryDataPoint.serialize();
-          Message msg = new Message(msgStr);
+            // Add the telemetry to the message body as JSON.
+            String msgStr = telemetryDataPoint.serialize();
+            Message msg = new Message(msgStr);
 
-          // Add a custom application property to the message.
-          // An IoT hub can filter on these properties without access to the message body.
-          msg.setProperty("temperatureAlert", (currentTemperature > 30) ? "true" : "false");
+            // Add a custom application property to the message.
+            // An IoT hub can filter on these properties without access to the message body.
+            msg.setProperty("temperatureAlert", (currentTemperature > 30) ? "true" : "false");
 
-          System.out.println("Sending message: " + msgStr);
+            System.out.println("Sending message: " + msgStr);
 
-          Object lockobj = new Object();
+            Object lockobj = new Object();
 
-          // Send the message.
-          EventCallback callback = new EventCallback();
-          client.sendEventAsync(msg, callback, lockobj);
+            // Send the message.
+            EventCallback callback = new EventCallback();
+            client.sendEventAsync(msg, callback, lockobj);
 
-          synchronized (lockobj) {
-            lockobj.wait();
-          }
-          Thread.sleep(1000);
+            synchronized (lockobj) {
+              lockobj.wait();
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("measurement invalid");
+        }
+        
+        Thread.sleep(1000);
+        
         }
       } catch (InterruptedException e) {
         System.out.println("Finished.");
