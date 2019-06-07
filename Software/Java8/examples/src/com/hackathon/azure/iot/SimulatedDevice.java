@@ -15,21 +15,37 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
+import org.iot.raspberry.grovepi.GrovePi;
+import org.iot.raspberry.grovepi.pi4j.GrovePi4J;
+import org.iot.raspberry.grovepi.devices.GroveTemperatureAndHumiditySensor;
+import java.io.IOException;
+
 public class SimulatedDevice {
   // The device connection string to authenticate the device with your IoT hub.
   // Using the Azure CLI:
   // az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyJavaDevice --output table
   private static String connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice;SharedAccessKey=MYC7pLyU8R01VQuJ3SrO8Gw3mKOVbvnS7ThUu8AV7Hw=";
 
+  
   // Using the MQTT protocol to connect to IoT Hub
   private static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
   private static DeviceClient client;
 
+  private static GrovePi grovePi;
+
+  static{
+      try {
+        grovePi = new GrovePi4J();
+      } catch (IOException e){
+          System.out.println("Can't connect to Raspberry pi");
+      }
+  }
+  
   // Specify the telemetry to send to your IoT hub.
   private static class TelemetryDataPoint {
     public double temperature;
     public double humidity;
-
+    
     // Serialize object to JSON format.
     public String serialize() {
       Gson gson = new Gson();
@@ -53,6 +69,8 @@ public class SimulatedDevice {
   private static class MessageSender implements Runnable {
     public void run() {
       try {
+        GroveTemperatureAndHumiditySensor dht =
+                new GroveTemperatureAndHumiditySensor(grovePi, 8, GroveTemperatureAndHumiditySensor.Type.DHT11);
         // Initialize the simulated telemetry.
         double minTemperature = 20;
         double minHumidity = 60;
@@ -60,8 +78,17 @@ public class SimulatedDevice {
 
         while (true) {
           // Simulate telemetry.
-          double currentTemperature = minTemperature + rand.nextDouble() * 15;
-          double currentHumidity = minHumidity + rand.nextDouble() * 20;
+          double currentTemperature = -1;
+          double currentHumidity = -1;
+          try {
+            //TODO: handle (ignore) NaN values
+              
+            currentTemperature = dht.get().getTemperature();
+            currentHumidity = dht.get().getHumidity();
+            
+          } catch (IOException e){
+              System.out.println("Error measuring temp/humid");
+          }
           TelemetryDataPoint telemetryDataPoint = new TelemetryDataPoint();
           telemetryDataPoint.temperature = currentTemperature;
           telemetryDataPoint.humidity = currentHumidity;
