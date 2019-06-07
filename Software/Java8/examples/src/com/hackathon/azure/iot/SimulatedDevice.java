@@ -29,7 +29,7 @@ public class SimulatedDevice {
   // Using the MQTT protocol to connect to IoT Hub
   private static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
   private static DeviceClient client;
-
+  
   private static GrovePi grovePi;
 
   private static final int WHICHDUMMY = 1;
@@ -42,6 +42,9 @@ public class SimulatedDevice {
               break;
           case 1:
               connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice2;SharedAccessKey=9VZBQPI1ztZdoPirsOBFjpxI0n1SReTj6NHc1fnAXzc=";
+              break;
+          case 2:
+              connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice;SharedAccessKey=MYC7pLyU8R01VQuJ3SrO8Gw3mKOVbvnS7ThUu8AV7Hw=";
       }
       
       try {
