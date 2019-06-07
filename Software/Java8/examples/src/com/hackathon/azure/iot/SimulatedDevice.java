@@ -24,8 +24,7 @@ public class SimulatedDevice {
   // The device connection string to authenticate the device with your IoT hub.
   // Using the Azure CLI:
   // az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyJavaDevice --output table
-  private static String connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice;SharedAccessKey=MYC7pLyU8R01VQuJ3SrO8Gw3mKOVbvnS7ThUu8AV7Hw=";
-  private static final String location = "7,3";
+  private static String connString;
   
   // Using the MQTT protocol to connect to IoT Hub
   private static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
@@ -33,7 +32,18 @@ public class SimulatedDevice {
 
   private static GrovePi grovePi;
 
+  private static final int WHICHDUMMY = 1;
+  private static final String location = "25,13";
+
   static{
+      switch(WHICHDUMMY){
+          case 0:
+              connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice;SharedAccessKey=MYC7pLyU8R01VQuJ3SrO8Gw3mKOVbvnS7ThUu8AV7Hw=";              
+              break;
+          case 1:
+              connString = "HostName=uwt-rasppi.azure-devices.net;DeviceId=MyJavaDevice2;SharedAccessKey=9VZBQPI1ztZdoPirsOBFjpxI0n1SReTj6NHc1fnAXzc=";
+      }
+      
       try {
         grovePi = new GrovePi4J();
       } catch (IOException e){
@@ -69,10 +79,14 @@ public class SimulatedDevice {
 
   private static class MessageSender implements Runnable {
     public void run() {
+      Random r = new Random();  
+        
       try {
-        GroveTemperatureAndHumiditySensor dht =
-                new GroveTemperatureAndHumiditySensor(grovePi, 8, GroveTemperatureAndHumiditySensor.Type.DHT11);
-        // Initialize the simulated telemetry.
+        GroveTemperatureAndHumiditySensor dht;
+        if (WHICHDUMMY == 0) {
+            dht = new GroveTemperatureAndHumiditySensor(grovePi, 8, GroveTemperatureAndHumiditySensor.Type.DHT11);
+        }        
+// Initialize the simulated telemetry.
         double minTemperature = 20;
         double minHumidity = 60;
         Random rand = new Random();
@@ -81,20 +95,24 @@ public class SimulatedDevice {
           // Simulate telemetry.
           Double currentTemperature = -1.0;
           Double currentHumidity = -1.0;
-          try {
-            Double newTemp = dht.get().getTemperature();
-            Double newHumidity = dht.get().getHumidity();
-            
-            if (!newTemp.isNaN()) {
-                currentTemperature = newTemp;
-            }
-            
-            if (newHumidity.isNaN()) {
-                currentHumidity = newHumidity;
-            }
-            
-          } catch (IOException e){
-              System.out.println("Error measuring temp/humid");
+          if (WHICHDUMMY == 0){
+            try {
+                Double newTemp = dht.get().getTemperature();
+                Double newHumidity = dht.get().getHumidity();
+                
+                if (!newTemp.isNaN()) {
+                    currentTemperature = newTemp;
+                }
+
+                if (newHumidity.isNaN()) {
+                    currentHumidity = newHumidity;
+                }
+
+              } catch (IOException e){
+                  System.out.println("Error measuring temp/humid");
+              }
+          } else {
+              currentTemperature = 17+3*r.nextGaussian();
           }
           
           try {
